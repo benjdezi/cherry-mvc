@@ -14,8 +14,8 @@ from pyutils.utils.logging import Logger
 from mvc.server import session
 from mvc.controller.utils import render_template
 from cStringIO import StringIO
+from time import time
 import cherrypy
-import time
 
 DEV_DEBUG_PATTERN = "${dev_debug_info}"
 DEFAULT_TEMPLATE_EXT = "html"
