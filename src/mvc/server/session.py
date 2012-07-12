@@ -4,11 +4,9 @@ Created on Feb 24, 2012
 User session management tools
 
 @requires: CherryPy (http://docs.cherrypy.org/stable/intro/install.html)
-@requires: py-utils (https://github.com/benjdezi/Python-Utils)
 @author: Benjamin Dezile
 '''
 
-from pyutils.utils.logging import Logger
 import cherrypy
 import base64
 
@@ -132,9 +130,9 @@ def remove_cookie(key):
 
 #### Remember me methods ############
 
-def _make_remember_me_token(user):
+def _make_remember_me_token(user_id, user_pwd=None):
     ''' Return the remember me token for the given user '''
-    return base64.b64encode("%s::%s" % (user.get_id(), user.get_password()))
+    return base64.b64encode("%s::%s" % (user_id, user_pwd if user_pwd else ""))
 
 def _parse_remember_me_token(token):
     ''' Extract the remember me token '''
@@ -144,10 +142,9 @@ def _get_remember_me_value():
     ''' Get the remember me cookie value '''
     return get_cookie(RM_KEY)
 
-def set_remember_me(user):
+def set_remember_me(user_id, user_pwd=None):
     ''' Enable automatic session recovery '''
-    set_cookie(RM_KEY, _make_remember_me_token(user))
-    Logger.debug("Set remember me for user %s" % user.get_id())
+    set_cookie(RM_KEY, _make_remember_me_token(user_id, user_pwd))
 
 def unset_remember_me():
     ''' Disable automatic session recovery '''
@@ -157,10 +154,10 @@ def has_remember_me():
     ''' Return whether session recovery is enabled '''
     return (get_cookie("rm") is not None)
 
-def recover(get_user_fn, on_success=None):
+def recover():
     ''' Recover user session if possible 
-    get_user_fn:    Method to use to retrieve a user object
-    on_success:     Method to call upon successful recovery
+    Return user data upon success, False if the data was corrupted
+    and None otherwise.
     '''
     rm = _get_remember_me_value()
     if rm and not has_user():
@@ -169,21 +166,11 @@ def recover(get_user_fn, on_success=None):
         rm_data = _parse_remember_me_token(rm)
         if rm_data and len(rm_data) == 2:
             user_id = int(rm_data[0])
-            user = get_user_fn(user_id)
-            if not user:
-                # Invalid data
-                unset_remember_me()
-            else:
-                if user.getPassword() == rm_data[1]:
-                    # Recover user session
-                    set_user(user)
-                    if on_success:
-                        on_success(user)
-                    Logger.debug("Recovered session for user %s" % user.get_id())
-                else:
-                    corrupted = True
+            user_pwd = rm_data[1]
+            # Return user data
+            return (user_id, user_pwd if user_pwd else None)
         else:
             corrupted = True
         if corrupted:
-            Logger.warn("Corrupted remember me data")
             unset_remember_me()
+            return False

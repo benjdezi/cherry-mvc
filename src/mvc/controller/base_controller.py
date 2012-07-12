@@ -31,7 +31,9 @@ def _action_call_wrapper(f):
         
         # Session recovery
         try:
-            session.recover()
+            user_data = session.recover()
+            if user_data:
+                inst._session_recovery(*user_data)
         except Exception, e:
             Logger.error("Could not recover session", e)  
         
@@ -108,6 +110,10 @@ class BaseController(object):
         ''' Called right after an action is executed '''
         pass
         
+    def _session_recovery(self, user_id, user_pwd):
+        ''' Called upon success session recovery '''
+        pass
+        
     def getName(self):
         ''' Return the controller's name '''
         return self.name
@@ -135,13 +141,13 @@ class BaseController(object):
         ''' Internally redirect the current request to the given action '''
         path = "/".join([controller, action]) if action else controller
         url = BaseController._makeURL(path, params)
-        Logger.debug("Forwarding to %s" % url)
+        Logger.info("Forwarding to %s" % url)
         cherrypy.lib.cptools.redirect(url, True)
     
     @classmethod
     def redirect(cls, path, params=None):
         ''' Redirect the current request to the given path '''
         url = BaseController._makeURL(path, params)
-        Logger.debug("Redirecting to %s" % url)
+        Logger.info("Redirecting to %s" % url)
         cherrypy.lib.cptools.redirect(url, False)
         
