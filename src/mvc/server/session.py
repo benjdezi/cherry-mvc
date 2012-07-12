@@ -37,7 +37,7 @@ def get(key):
 def has(key):
     ''' Return whether the current session has the given key '''
     s = _get_session() 
-    v = s.get(key,None)
+    v = s.get(key, None)
     return (v is not None)
 
 def remove(key):
