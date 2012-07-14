@@ -19,7 +19,6 @@ import urllib
 import os
 
 
-VIEW_ROOT_DIR = Config.get("templates", "view_dir")
 FILE_CHECKS = Config.get("templates", "file_checks")
 TEMPLATE_CACHE_DIR = Config.get("templates", "cache_dir")
 
@@ -30,12 +29,12 @@ if not DEFAULT_TEMPLATE_EXT:
 
 def render_template(path, params=dict()):
     ''' Render a template for the given parameters 
-        path:      Template relative path
+        path:      Template absolute path
         params:    Rendering parameters
     '''
     
     path_parts = path.split(os.path.sep)
-    full_path = os.path.join(VIEW_ROOT_DIR, os.path.sep.join(path_parts[:-1]))
+    full_path = os.path.sep.join(path_parts[:-1])
     file_name = os.path.sep + path_parts[-1]
     if file_name.find(".") < 0:
         file_name += "." + DEFAULT_TEMPLATE_EXT
