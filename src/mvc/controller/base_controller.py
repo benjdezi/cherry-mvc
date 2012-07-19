@@ -98,6 +98,9 @@ class BaseController(object):
         # Automatically add call monitoring to instance methods
         # except one starting with _ (considered internal)
         for x in inspect.getmembers(self, (inspect.ismethod)):
+            if hasattr(BaseController, x[0]):
+                # Ignore methods from BaseController
+                continue
             if not x[0].startswith('_'):
                 attr = getattr(self, x[0])
                 setattr(self, x[0], _action_call_wrapper(attr))
@@ -113,6 +116,10 @@ class BaseController(object):
     def _session_recovery(self, user_id, user_pwd):
         ''' Called upon success session recovery '''
         pass
+        
+    def log(self, msg):
+        ''' Log a message using basic server logging '''
+        cherrypy.log("%s - %s" % (self.name, msg))
         
     def get_name(self):
         ''' Return the controller's name '''
