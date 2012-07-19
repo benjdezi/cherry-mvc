@@ -21,10 +21,11 @@ DEFAULT_REQ_CACHE_TTL = 24*3600
 def test_action(f):
     ''' Define a test action, only accessible in dev environment '''
     def check_if_dev(*args, **kw):
-        if Config.is_dev():
-            return f(*args, **kw)
+        if Config.is_prod():
+            controller = args[0]
+            controller.send_error(404)
         else:
-            raise Exception("No accessible")
+            return f(*args, **kw)
     return check_if_dev
 
 def cached(f):
