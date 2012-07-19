@@ -114,10 +114,33 @@ class BaseController(object):
         ''' Called upon success session recovery '''
         pass
         
-    def getName(self):
+    def get_name(self):
         ''' Return the controller's name '''
         return self.name
-        
+    
+    def get_remote_address(self):
+        ''' Return the address and port of the remote client for the current request '''
+        req = self.get_request()
+        return (req.remote.ip, req.remote.port)
+    
+    def get_socket(self):
+        ''' Return the socket associated with the current request '''
+        req = self.get_request()
+        return req.rfile.rfile._sock
+    
+    def get_response(self):
+        ''' Return the current response '''
+        return cherrypy.response
+    
+    def get_request(self):
+        ''' Return the current request '''
+        return cherrypy.request
+    
+    def get_headers(self):
+        ''' Return the headers from the current request '''
+        req = self.get_request()
+        return req.headers  
+    
     @classmethod
     def renderView(cls, view_path, params=dict()):
         ''' Render a view with the given parameters '''
