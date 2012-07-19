@@ -25,7 +25,7 @@ def _action_call_wrapper(f):
         
         inst = f.im_self
         name = f.__name__
-        is_render_view = (name == "renderView")
+        is_render_view = (name is "render_view")
         is_async = (hasattr(f, 'is_async') and f.is_async is True)
         is_action = (is_render_view or is_async)
         
@@ -142,18 +142,18 @@ class BaseController(object):
         return req.headers  
     
     @classmethod
-    def renderView(cls, view_path, params=dict()):
+    def render_view(cls, view_path, params=dict()):
         ''' Render a view with the given parameters '''
         return render_template(view_path, params)
     
     @classmethod
-    def sendHTTPError(cls, status=500, msg="Server error"):
+    def send_error(cls, status=500, msg="Server error"):
         ''' Return an error for the current request '''
         Logger.error("HTTP %s%s" % (status, (": " + msg if msg else "")))
         raise cherrypy.HTTPError(status, msg)
     
     @classmethod
-    def _makeURL(cls, path, params=None):
+    def _make_url(cls, path, params=None):
         ''' Build a full url out of a path and parameters '''
         qs = urlencode(params) if params else ""
         path = path.strip("/")
@@ -163,14 +163,14 @@ class BaseController(object):
     def forward(cls, controller, action=None, params=None):
         ''' Internally redirect the current request to the given action '''
         path = "/".join([controller, action]) if action else controller
-        url = BaseController._makeURL(path, params)
+        url = BaseController._make_url(path, params)
         Logger.info("Forwarding to %s" % url)
         cherrypy.lib.cptools.redirect(url, True)
     
     @classmethod
     def redirect(cls, path, params=None):
         ''' Redirect the current request to the given path '''
-        url = BaseController._makeURL(path, params)
+        url = BaseController._make_url(path, params)
         Logger.info("Redirecting to %s" % url)
         cherrypy.lib.cptools.redirect(url, False)
         
