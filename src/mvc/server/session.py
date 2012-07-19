@@ -20,6 +20,10 @@ def _get_session():
     cherrypy.lib.sessions.init()
     return cherrypy.session
 
+def get_id():
+    ''' Return the session id '''
+    s = _get_session()
+    return s.id
 
 #### Session data methods ############
 
