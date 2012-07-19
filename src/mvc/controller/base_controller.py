@@ -147,8 +147,15 @@ class BaseController(object):
         return render_template(view_path, params)
     
     @classmethod
-    def send_error(cls, status=500, msg="Server error"):
+    def send_error(cls, status=500, msg=None):
         ''' Return an error for the current request '''
+        if not msg:
+            if status == 404:
+                msg = "Page not found"
+            elif status == 500:
+                msg = "Server error"
+            else:
+                msg = "Unknown error"
         Logger.error("HTTP %s%s" % (status, (": " + msg if msg else "")))
         raise cherrypy.HTTPError(status, msg)
     
