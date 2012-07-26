@@ -10,8 +10,8 @@ User session management tools
 import cherrypy
 import base64
 
-APP_COOKIE_KEY = "kac"
-RM_KEY = "rm"
+COOKIE_SEP = "::"
+RM_KEY = "_rm"
 USER_SESSION_KEY = "_user"
 
 
@@ -86,61 +86,35 @@ def expire():
 
 #### App cookie methods ############
 
-def _get_app_cookie_values():
-    ''' Return the application cookie value '''
-    cookie = cherrypy.request.cookie.get(APP_COOKIE_KEY, None)
-    if cookie:
-        values = dict()
-        for entry in cookie.value.split("@@"):
-            pair = entry.split("::")
-            if pair and len(pair) == 2:
-                values[pair[0]] = pair[1]
-        return values
-
-def _set_app_cookie_values(values):
-    ''' Set the application cookie value '''
-    v = list()
-    for k in values:
-        v.append(k + "::" + values[k])
-    cookie = cherrypy.response.cookie
-    cookie[APP_COOKIE_KEY] = "@@".join(v)
-    cookie[APP_COOKIE_KEY]['path'] = '/'
-    cookie[APP_COOKIE_KEY]['max-age'] = 3600 * 24 * 365
-    cookie[APP_COOKIE_KEY]['version'] = 1
-
 def get_cookie(key):
     ''' Get a cookie value '''
-    values = _get_app_cookie_values()
-    if values:
-        return values.get(key, None)
+    return cherrypy.request.cookie.get(key, None)
 
 def set_cookie(key, value):
     ''' Set a cookie value '''
-    values = _get_app_cookie_values()
-    if not values:
-        values = dict()
-    values[key] = value
-    _set_app_cookie_values(values)
+    cookie = cherrypy.response.cookie
+    cookie[key] = str(value)
+    cookie[key]['path'] = '/'
+    cookie[key]['max-age'] = 3600 * 24 * 365
+    cookie[key]['version'] = 1
 
 def remove_cookie(key):
     ''' Remove a cookie and return its value '''
-    values = _get_app_cookie_values()
-    if values:
-        v = values[key]
-        del values[key]
-        _set_app_cookie_values(values)
-        return v
+    v = cherrypy.request.cookie.get(key, None)
+    if v is not None:
+        del cherrypy.request.cookie[key]
+    return v
 
 
 #### Remember me methods ############
 
 def _make_remember_me_token(user_id, user_pwd=None):
     ''' Return the remember me token for the given user '''
-    return base64.b64encode("%s::%s" % (user_id, user_pwd if user_pwd else ""))
+    return base64.b64encode("%s%s%s" % (user_id, COOKIE_SEP, user_pwd if user_pwd else ""))
 
 def _parse_remember_me_token(token):
     ''' Extract the remember me token '''
-    return base64.b64decode(token).split("::")
+    return base64.b64decode(token).split(COOKIE_SEP)
 
 def _get_remember_me_value():
     ''' Get the remember me cookie value '''

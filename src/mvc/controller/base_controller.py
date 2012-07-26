@@ -104,6 +104,7 @@ class BaseController(object):
             if not x[0].startswith('_'):
                 attr = getattr(self, x[0])
                 setattr(self, x[0], _action_call_wrapper(attr))
+        self.log("Created new controller")
         
     def _before_action(self, action_name, **action_args):
         ''' Called right before an action is executed '''
