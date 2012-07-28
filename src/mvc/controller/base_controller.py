@@ -8,13 +8,12 @@ Created on Feb 24, 2012
 
 from pyutils.utils.logging import Logger
 from pyutils.utils.config import Config
-from mvc.controller.utils import format_http_args, render_template
+from mvc.controller.utils import format_http_args, render_template, format_async_response
 from mvc.server import session
 from urllib import urlencode
 from time import time
 import cherrypy
 import inspect
-import json
 
 
 ##  HELPERS  #################################
@@ -68,17 +67,15 @@ def _action_call_wrapper(f):
 
 def _process_async_call(f, args):
     ''' Process an asynchronous action call and automatically format the response '''
-    resp = { "success": True }
     try:
         res = f(**args)
-        resp['data'] = res if res is not None else {}
+        data = res if res is not None else {}
+        json_resp = format_async_response(data)
     except cherrypy.HTTPError, e:
         raise e
     except Exception, e:
         Logger.error("Error while processing call to %s" % f.__name__, e)
-        resp['success'] = False
-        resp['error'] = str(e)
-    json_resp = json.dumps(resp)
+        json_resp = format_async_response(None, False, e)
     if Config.is_dev():
         Logger.debug("Async response to %s: %s" % (f.__name__, json_resp))
     return json_resp

@@ -16,6 +16,7 @@ from pyutils.utils import helpers
 from mvc.server import session
 from cStringIO import StringIO
 import urllib
+import json
 import os
 
 
@@ -92,3 +93,13 @@ def format_http_args(args):
             # Single value
             formatted_args[key] = value
     return formatted_args 
+
+def format_async_response(resp_data=dict(), success=True, ex=None):
+    ''' Wrap the given data into a standard async response '''
+    resp = dict()
+    resp['success'] = success
+    if resp_data is not None:
+        resp['data'] = resp_data
+    if not success and ex:
+        resp['error'] = str(ex)
+    return json.dumps(resp)
