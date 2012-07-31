@@ -79,4 +79,3 @@ def admin_only(f):
         else:
             raise cherrypy.HTTPError(401, "Page outside of scope")
     return check_admin_rights
-

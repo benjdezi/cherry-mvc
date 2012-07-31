@@ -80,56 +80,35 @@ def assert_user_in_session():
 
 def expire():
     ''' Expire the current session '''
+    remove_user()
+    unset_remember_me()
     s = _get_session()
-    s.expire()
+    s.clear()
+    s.delete()
+    cherrypy.lib.sessions.expire()
 
 
-#### App cookie methods ############
-
-def _get_app_cookie_values():
-    ''' Return the application cookie value '''
-    cookie = cherrypy.request.cookie.get(APP_COOKIE_KEY, None)
-    if cookie:
-        values = dict()
-        for entry in cookie.value.split("@@"):
-            pair = entry.split("::")
-            if pair and len(pair) == 2:
-                values[pair[0]] = pair[1]
-        return values
-
-def _set_app_cookie_values(values):
-    ''' Set the application cookie value '''
-    v = list()
-    for k in values:
-        v.append(k + "::" + values[k])
-    cookie = cherrypy.response.cookie
-    cookie[APP_COOKIE_KEY] = "@@".join(v)
-    cookie[APP_COOKIE_KEY]['path'] = '/'
-    cookie[APP_COOKIE_KEY]['max-age'] = 3600 * 24 * 365
-    cookie[APP_COOKIE_KEY]['version'] = 1
+#### Cookie management methods #############
 
 def get_cookie(key):
     ''' Get a cookie value '''
-    values = _get_app_cookie_values()
-    if values:
-        return values.get(key, None)
+    c = cherrypy.request.cookie.get(key, None)
+    return c.value if c else None
 
 def set_cookie(key, value):
     ''' Set a cookie value '''
-    values = _get_app_cookie_values()
-    if not values:
-        values = dict()
-    values[key] = value
-    _set_app_cookie_values(values)
+    cookie = cherrypy.response.cookie
+    cookie[key] = str(value)
+    cookie[key]['path'] = '/'
+    cookie[key]['max-age'] = 3600 * 24 * 365
+    cookie[key]['version'] = 1
 
 def remove_cookie(key):
     ''' Remove a cookie and return its value '''
-    values = _get_app_cookie_values()
-    if values:
-        v = values[key]
-        del values[key]
-        _set_app_cookie_values(values)
-        return v
+    v = cherrypy.request.cookie.get(key, None)
+    if v is not None:
+        del cherrypy.request.cookie[key]
+    return v
 
 
 #### Remember me methods ############
@@ -163,8 +142,10 @@ def recover():
     Return user data upon success, False if the data was corrupted
     and None otherwise.
     '''
+    if has_user():
+        return
     rm = _get_remember_me_value()
-    if rm and not has_user():
+    if rm:
         # Get remember me token
         corrupted = False
         rm_data = _parse_remember_me_token(rm)
