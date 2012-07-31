@@ -80,15 +80,20 @@ def assert_user_in_session():
 
 def expire():
     ''' Expire the current session '''
+    remove_user()
+    unset_remember_me()
     s = _get_session()
-    s.expire()
+    s.clear()
+    s.delete()
+    cherrypy.lib.sessions.expire()
 
 
-#### App cookie methods ############
+#### Cookie management methods #############
 
 def get_cookie(key):
     ''' Get a cookie value '''
-    return cherrypy.request.cookie.get(key, None)
+    c = cherrypy.request.cookie.get(key, None)
+    return c.value if c else None
 
 def set_cookie(key, value):
     ''' Set a cookie value '''
@@ -137,8 +142,10 @@ def recover():
     Return user data upon success, False if the data was corrupted
     and None otherwise.
     '''
+    if has_user():
+        return
     rm = _get_remember_me_value()
-    if rm and not has_user():
+    if rm:
         # Get remember me token
         corrupted = False
         rm_data = _parse_remember_me_token(rm)
