@@ -78,14 +78,13 @@ def assert_user_in_session():
 
 #### Session management methods ############
 
-def expire():
+def expire(expire=False):
     ''' Expire the current session '''
-    remove_user()
-    unset_remember_me()
     s = _get_session()
     s.clear()
-    s.delete()
-    cherrypy.lib.sessions.expire()
+    unset_remember_me()
+    if expire:
+        cherrypy.lib.sessions.expire()
 
 
 #### Cookie management methods #############
@@ -102,6 +101,10 @@ def set_cookie(key, value):
     cookie[key]['path'] = '/'
     cookie[key]['max-age'] = 3600 * 24 * 365
     cookie[key]['version'] = 1
+
+def has_cookie(key):
+    ''' Return whether a cookie key is present '''
+    return cherrypy.request.cookie.has_key(key)
 
 def remove_cookie(key):
     ''' Remove a cookie and return its value '''
@@ -123,19 +126,23 @@ def _parse_remember_me_token(token):
 
 def _get_remember_me_value():
     ''' Get the remember me cookie value '''
-    return get_cookie(RM_KEY)
+    if has_remember_me():
+        return get_cookie(RM_KEY)
 
 def set_remember_me(user_id, user_pwd=None):
     ''' Enable automatic session recovery '''
+    if has('_rm_cleared'):
+        remove('_rm_cleared')
     set_cookie(RM_KEY, _make_remember_me_token(user_id, user_pwd))
 
 def unset_remember_me():
     ''' Disable automatic session recovery '''
+    put('_rm_cleared', True)
     remove_cookie(RM_KEY)
 
 def has_remember_me():
     ''' Return whether session recovery is enabled '''
-    return (get_cookie("rm") is not None)
+    return (not get('_rm_cleared') and has_cookie(RM_KEY) is True)
 
 def recover():
     ''' Recover user session if possible 
