@@ -14,6 +14,7 @@ from urllib import urlencode
 from time import time
 import cherrypy
 import inspect
+import os
 
 
 ##  HELPERS  #################################
@@ -89,6 +90,9 @@ class BaseController(object):
     Contains all sorts of helpers and structures that may be needed in controllers.
     '''
     
+    instances = dict()
+    web_dir = None
+    
     def __init__(self, name, path):
         self.name = name
         self.path = path
@@ -101,6 +105,7 @@ class BaseController(object):
             if not x[0].startswith('_'):
                 attr = getattr(self, x[0])
                 setattr(self, x[0], _action_call_wrapper(attr))
+        BaseController.instances[path] = self
         self.log("Created new controller")
         
     def _before_action(self, action_name, **action_args):
@@ -111,9 +116,21 @@ class BaseController(object):
         ''' Called right after an action is executed '''
         pass
         
-    def _session_recovery(self, user_id, user_pwd):
-        ''' Called upon success session recovery '''
+    def _session_recovery(self, user_id, user_token):
+        ''' Called upon success session recovery. 
+        This should be overridden using set_session_recovery_handler.
+        '''
         pass
+        
+    def set_session_recovery_handler(self, handler):
+        ''' Set the session recovery handling method '''
+        self._session_recovery = handler
+        
+    def set_web_dir(self, path):
+        ''' Set the path to the web directory, 
+        this will be used in rendering templates.
+        '''
+        self.__class__.web_dir = path
         
     def log(self, msg):
         ''' Log a message using basic server logging '''
@@ -147,9 +164,12 @@ class BaseController(object):
         return req.headers  
     
     @classmethod
-    def render_view(cls, view_path, params=dict()):
+    def render_view(cls, view_rel_path, params=dict()):
         ''' Render a view with the given parameters '''
-        return render_template(view_path, params)
+        if not cls.web_dir:
+            raise Exception("Web dir path not set")
+        full_path = os.path.join(cls.web_dir, "views", view_rel_path)
+        return render_template(full_path, params)
     
     @classmethod
     def send_error(cls, status=500, msg=None):
@@ -173,11 +193,20 @@ class BaseController(object):
     
     @classmethod
     def forward(cls, controller, action=None, params=None):
-        ''' Internally redirect the current request to the given action '''
-        path = "/".join([controller, action]) if action else controller
-        url = BaseController._make_url(path, params)
-        Logger.info("Forwarding to %s" % url)
-        cherrypy.lib.cptools.redirect(url, True)
+        ''' Forward the current request to the given action '''
+        action = action if action else "index"
+        controller_inst = cls.instances[controller]
+        if not controller_inst:
+            cls.send_error(404, "Controller %s does not exist" % controller)
+        try:
+            action_meth = getattr(controller_inst, action)
+            Logger.info("Forwarding to %s > %s with params = %s" % (controller, action, params)) 
+            return action_meth(**params)
+        except AttributeError:
+            cls.send_error(404, "%s/%s does not exist" % (controller, action))
+        except BaseException, e:
+            Logger.error("Error while forwarding to %s > %s" % (controller, action), e)
+            cls.send_error(500)
     
     @classmethod
     def redirect(cls, path, params=None):
