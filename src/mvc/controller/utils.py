@@ -32,7 +32,7 @@ def get_template_path_info(path):
     ''' Return (base_path, file_name) '''
     path_parts = path.split(os.path.sep)
     full_path = os.path.sep.join(path_parts[:-1])
-    file_name = os.path.sep + path_parts[-1]
+    file_name = path_parts[-1]
     if file_name.find(".") < 0:
         file_name += "." + DEFAULT_TEMPLATE_EXT
     return (full_path, file_name)
@@ -46,7 +46,7 @@ def render_template(path, params=dict()):
     full_path, file_name = get_template_path_info(path)
     
     lookup = TemplateLookup(directories=[full_path], filesystem_checks=FILE_CHECKS, module_directory=TEMPLATE_CACHE_DIR)
-    template = lookup.get_template(file_name)
+    template = lookup.get_template(os.path.sep + file_name)
     
     ctx_params = dict(params)
     ctx_params['include_template'] = render_template
