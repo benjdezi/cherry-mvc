@@ -33,15 +33,12 @@ def _action_call_wrapper(f):
         try:
             user_data = session.recover()
             if user_data:
-                inst._session_recovery(*user_data)
+                inst._session_recovery(inst, user_data[0], user_data[1])
         except Exception, e:
             Logger.error("Could not recover session", e)  
         
         # Format arguments
-        if is_action:
-            formatted_kargs = format_http_args(kwargs)
-        else:
-            formatted_kargs = kwargs
+        formatted_kargs = format_http_args(kwargs)
         
         # Execute method
         start_time = time()
@@ -136,9 +133,17 @@ class BaseController(object):
         ''' Log a message using basic server logging '''
         cherrypy.log("%s - %s" % (self.name, msg))
         
+    def get_path(self):
+        ''' Return the associated path '''
+        return self.path
+        
     def get_name(self):
         ''' Return the controller's name '''
         return self.name
+    
+    def get_remote_ip(self):
+        ''' Return the IP address of the remote client '''
+        return self.get_remote_address()[0]
     
     def get_remote_address(self):
         ''' Return the address and port of the remote client for the current request '''
@@ -189,7 +194,7 @@ class BaseController(object):
         ''' Build a full url out of a path and parameters '''
         qs = urlencode(params) if params else ""
         path = path.strip("/")
-        return ("/" + path + "/" if path else "/") + ("?" + qs if qs else "")
+        return ("/" + path if path else "/") + ("?" + qs if qs else "")
     
     @classmethod
     def forward(cls, controller, action=None, params=None):
