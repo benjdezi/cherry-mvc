@@ -158,9 +158,9 @@ def recover():
         rm_data = _parse_remember_me_token(rm)
         if rm_data and len(rm_data) == 2:
             user_id = int(rm_data[0])
-            user_pwd = rm_data[1]
+            user_token = rm_data[1]
             # Return user data
-            return (user_id, user_pwd if user_pwd else None)
+            return (user_id, user_token if user_token else None)
         else:
             corrupted = True
         if corrupted:
